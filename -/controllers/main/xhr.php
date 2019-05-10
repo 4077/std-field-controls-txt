@@ -4,27 +4,33 @@ class Xhr extends \Controller
 {
     public $allow = self::XHR;
 
+    public function reload()
+    {
+        if ($cell = $this->unxpackCell()) {
+            $this->c('~:reload', [], 'cell');
+        }
+    }
+
     public function update()
     {
         if ($cell = $this->unxpackCell()) {
-            $this->dmap('~|' . $cell->underscoreField(), 'data');
+            $this->dmap('~|' . $cell->underscoreField(), 'config');
 
-            $svc = \std\fieldControls\txt\svc($this->data('data'));
+            $svc = \std\fieldControls\txt\svc($this->data('config'));
 
             $txt = \std\ui\Txt::value($this);
 
-            $value = $svc->parseValue($cell->field, $txt->value);
+            $value = $svc->parseValue($txt->value);
 
             $cell->value($value);
 
-            list($content, $value) = $svc->getContent($cell->model, $cell->field);
+            list($content, $value) = $svc->getContent($cell);
 
             $txt->response($content, $value);
 
-            $this->se(underscore_field($cell->model, $cell->field))->trigger([
-                                                                                 'model' => $cell->model,
-                                                                                 'field' => $cell->field
-                                                                             ]);
+            pusher()->trigger('std/cell/update', [
+                'cell' => $cell->xpack()
+            ]);
         }
     }
 }

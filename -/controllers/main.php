@@ -2,18 +2,18 @@
 
 class Main extends \Controller
 {
-    private $model;
-
-    private $field;
+    /**
+     * @var \ewma\Data\Cell
+     */
+    private $cell;
 
     public function __create()
     {
-        $model = $this->model = $this->data['model'];
-        $field = $this->field = $this->data['field'];
+        $this->cell = $this->unpackCell();
 
-        $this->instance_(underscore_cell($model, $field));
+        $this->instance_($this->cell->xpack());
 
-        $this->dmap('|' . underscore_field($model, $field), 'data');
+        $this->dmap('|' . $this->cell->underscoreField(), 'config');
     }
 
     public function reload()
@@ -25,30 +25,30 @@ class Main extends \Controller
     {
         $v = $this->v('|');
 
-        $model = $this->model;
-        $field = $this->field;
+        $svc = \std\fieldControls\txt\svc($this->data('config'));
 
-        $svc = \std\fieldControls\txt\svc($this->data('data'));
-
-        list($content, $value) = $svc->getContent($model, $field);
+        list($content, $value) = $svc->getContent($this->cell);
 
         $v->assign([
                        'CONTENT' => $this->c('\std\ui txt:view', [
                            'path'                       => '>xhr:update',
                            'data'                       => [
-                               'cell' => xpack_cell($model, $field)
+                               'cell' => $this->cell->xpack()
                            ],
-                           'class'                      => 'txt ' . (null === $model->{$field} ? 'null' : ''),
+                           'class'                      => 'txt ' . (null === $this->cell->value() ? 'null' : ''),
                            'fitInputToClosest'          => '.cell',
                            'editTriggerClosestSelector' => '.cell',
                            'content'                    => $content,
-                           'contentOnInit'              => $value
+                           'contentOnInit'              => $value,
+                           'mask'                       => $svc->mask
                        ])
                    ]);
 
         $this->css();
 
-        $this->se(underscore_field($model, $field))->rebind(':reload');
+        if (!$this->app->html->containerAdded($this->_nodeId())) {
+            $this->app->html->addContainer($this->_nodeId(), $this->c('eventsDispatcher:view'));
+        }
 
         return $v;
     }
